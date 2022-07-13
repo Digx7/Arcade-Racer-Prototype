@@ -6,63 +6,81 @@ public class Hover : MonoBehaviour
 {
     public Rigidbody rb;
 
-    public float hoverHight;
+    public float flyHeight;
 
     public force thrust_force;
     public force break_force;
     public force spinRight_force;
     public force spinLeft_force;
-    public List<force> lift_forces;
+    public List<lift_force> lift_forces;
+
+    public force antiFly_force;
+
+    public void Awake(){
+      lift_forces.ForEach(setUpLiftForce);
+    }
 
     public void FixedUpdate(){
+      adjustLiftForceHeights();
       for(int i=0; i < lift_forces.Count; ++i){
-        Vector3 pos = GetForcePositon(lift_forces[i]);
-        Vector3 dir = GetForceDirection(lift_forces[i]);
+        applyLiftForce(lift_forces[i]);
+      }
 
-        if (Physics.Raycast(pos, -dir, hoverHight)){
+      if(Input.GetKey("space")) applyForce(thrust_force);
+      if(Input.GetKey("b")) applyForce(break_force);
+      if(Input.GetKey("a")) applyForce(spinLeft_force);
+      if(Input.GetKey("d")) applyForce(spinRight_force);
+
+      Vector3 pos = GetForcePositon(antiFly_force);
+      Vector3 dir = GetForceDirection(antiFly_force);
+      if (!Physics.Raycast(pos, dir, flyHeight)){
+        rb.AddForceAtPosition(antiFly_force.direction, antiFly_force.origin + transform.position);
+        Debug.Log("Applying AntiFly Force");
+      }
+      Debug.DrawRay(pos, dir, Color.green, 0.0f, true);
+    }
+
+    private void setUpLiftForce(lift_force input){
+      input.setUp();
+    }
+
+    private void applyLiftForce(lift_force input){
+        Vector3 pos = GetForcePositon(input);
+        Vector3 dir = GetForceDirection(input);
+
+        if (Physics.Raycast(pos, -dir, input.current_height)){
           rb.AddForceAtPosition(dir, pos);
-          Debug.Log("Adding Lift");
         }
-
-        Vector3 debugRay = new Vector3(0, -hoverHight, 0);
         Debug.DrawRay(pos, -dir, Color.red, 0.0f, true);
-      }
+    }
 
+    private void adjustLiftForceHeights(){
+      lift_forces.ForEach(setUpLiftForce);
       if(Input.GetKey("w")){
-        Vector3 pos = GetForcePositon(thrust_force);
-        Vector3 dir = GetForceDirection(thrust_force);
-
-        rb.AddForceAtPosition(dir, pos);
-
-        Debug.DrawRay(pos, -dir, Color.blue, 0.0f, true);
+        lift_forces[0].setToMinHeight();
+        lift_forces[1].setToMinHeight();
       }
-
       if(Input.GetKey("s")){
-        Vector3 pos = GetForcePositon(break_force);
-        Vector3 dir = GetForceDirection(break_force);
-
-        rb.AddForceAtPosition(dir, pos);
-
-        Debug.DrawRay(pos, -dir, Color.blue, 0.0f, true);
+        lift_forces[2].setToMinHeight();
+        lift_forces[3].setToMinHeight();
       }
-
-      if(Input.GetKey("d")){
-        Vector3 pos = GetForcePositon(spinRight_force);
-        Vector3 dir = GetForceDirection(spinRight_force);
-
-        rb.AddForceAtPosition(dir, pos);
-
-        Debug.DrawRay(pos, -dir, Color.blue, 0.0f, true);
-      }
-
       if(Input.GetKey("a")){
-        Vector3 pos = GetForcePositon(spinLeft_force);
-        Vector3 dir = GetForceDirection(spinLeft_force);
-
-        rb.AddForceAtPosition(dir, pos);
-
-        Debug.DrawRay(pos, -dir, Color.blue, 0.0f, true);
+        lift_forces[0].setToMinHeight();
+        lift_forces[2].setToMinHeight();
       }
+      if(Input.GetKey("d")){
+        lift_forces[1].setToMinHeight();
+        lift_forces[3].setToMinHeight();
+      }
+    }
+
+    private void applyForce(force input){
+      Vector3 pos = GetForcePositon(input);
+      Vector3 dir = GetForceDirection(input);
+
+      rb.AddForceAtPosition(dir, pos);
+
+      Debug.DrawRay(pos, -dir, Color.blue, 0.0f, true);
     }
 
     private Vector3 GetForcePositon(force input){
